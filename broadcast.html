@@ -2,11 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>방송 타이머</title>
+<title>타이머</title>
 <style>
   body {
     background: transparent;
-    color: #FF69B4;  /* 분홍색 */
+    color: #FF69B4;
     font-size: 100px;
     font-family: Arial, sans-serif;
     text-align: center;
@@ -22,7 +22,6 @@
 let timeLeft = 0;
 let timerId = null;
 
-// 웹 컨트롤에서 postMessage로 시간 받기
 window.addEventListener("message", (event) => {
   const data = event.data;
   if (data.action === "set") {
