@@ -20,7 +20,7 @@
   }
   input {
     font-size: 22px;
-    width: 100px;
+    width: 80px;
     padding: 10px;
     border-radius: 8px;
     border: none;
@@ -45,6 +45,7 @@
 <h2>타이머 컨트롤</h2>
 
 <input type="number" id="minutes" placeholder="분 입력" min="0">
+<input type="number" id="seconds" placeholder="초 입력" min="0" max="59">
 <button onclick="setTimer()">설정</button>
 <br>
 <button onclick="startTimer()">Start</button>
@@ -72,11 +73,14 @@ function postToBroadcast(action, time=0) {
 }
 
 function setTimer() {
-  const minutes = parseInt(document.getElementById("minutes").value);
-  if (!isNaN(minutes) && minutes >= 0) {
-    localTime = minutes * 60;
+  const minutes = parseInt(document.getElementById("minutes").value) || 0;
+  const seconds = parseInt(document.getElementById("seconds").value) || 0;
+  if (minutes >= 0 && seconds >= 0 && seconds < 60) {
+    localTime = minutes * 60 + seconds;
     updateDisplay();
     postToBroadcast("set", localTime);
+  } else {
+    alert("초는 0~59 사이로 입력해주세요.");
   }
 }
 
