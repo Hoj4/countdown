@@ -5,14 +5,39 @@
 <title>타이머 컨트롤</title>
 <style>
   body {
-    font-family: Arial, sans-serif;
+    font-family: 'Arial', sans-serif;
+    background: #222;
+    color: white;
     padding: 20px;
+    text-align: center;
   }
-  input, button {
-    font-size: 18px;
-    margin: 5px;
+  h2 { margin-bottom: 20px; }
+  #currentTime {
+    font-size: 50px;
+    margin: 20px 0;
+    color: #FF69B4;
+    text-shadow: 2px 2px 5px rgba(0,0,0,0.6);
+  }
+  input {
+    font-size: 22px;
+    width: 100px;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    margin-right: 10px;
+  }
+  button {
+    font-size: 20px;
     padding: 10px 20px;
+    margin: 5px;
+    border: none;
+    border-radius: 8px;
+    background: #FF69B4;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
   }
+  button:hover { background: #FF1493; }
 </style>
 </head>
 <body>
@@ -26,8 +51,12 @@
 <button onclick="pauseTimer()">Pause</button>
 <button onclick="resetTimer()">Reset</button>
 
+<div id="currentTime">00:00</div>
+
 <script>
 let broadcastWindow = null;
+let localTime = 0;
+let localTimerId = null;
 
 function openBroadcast() {
   if (!broadcastWindow || broadcastWindow.closed) {
@@ -45,21 +74,63 @@ function postToBroadcast(action, time=0) {
 function setTimer() {
   const minutes = parseInt(document.getElementById("minutes").value);
   if (!isNaN(minutes) && minutes >= 0) {
-    postToBroadcast("set", minutes*60);
+    localTime = minutes * 60;
+    updateDisplay();
+    postToBroadcast("set", localTime);
   }
 }
 
 function startTimer() {
   postToBroadcast("start");
+  if (!localTimerId) {
+    localTimerId = setInterval(() => {
+      if (localTime > 0) {
+        localTime--;
+        updateDisplay();
+      } else {
+        clearInterval(localTimerId);
+        localTimerId = null;
+      }
+    }, 1000);
+  }
 }
 
 function pauseTimer() {
   postToBroadcast("pause");
+  clearInterval(localTimerId);
+  localTimerId = null;
 }
 
 function resetTimer() {
   postToBroadcast("reset");
+  clearInterval(localTimerId);
+  localTimerId = null;
+  localTime = 0;
+  updateDisplay();
 }
+
+function updateDisplay() {
+  let minutes = Math.floor(localTime / 60);
+  let seconds = localTime % 60;
+  document.getElementById("currentTime").textContent =
+    String(minutes).padStart(2,'0') + ":" + String(seconds).padStart(2,'0');
+}
+
+window.addEventListener("message", (event) => {
+  const data = event.data;
+  if (data.action === "set") {
+    localTime = data.time;
+    updateDisplay();
+  } else if (data.action === "start") {
+    startTimer();
+  } else if (data.action === "pause") {
+    pauseTimer();
+  } else if (data.action === "reset") {
+    resetTimer();
+  }
+});
+
+updateDisplay();
 </script>
 
 </body>
