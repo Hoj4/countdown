@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>타이머 컨트롤</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  input, button {
+    font-size: 18px;
+    margin: 5px;
+    padding: 10px 20px;
+  }
+</style>
+</head>
+<body>
+
+<h2>방송 타이머 컨트롤</h2>
+
+<input type="number" id="minutes" placeholder="분 입력" min="0">
+<button onclick="setTimer()">설정</button>
+<br>
+<button onclick="startTimer()">Start</button>
+<button onclick="pauseTimer()">Pause</button>
+<button onclick="resetTimer()">Reset</button>
+
+<script>
+let broadcastWindow = null;
+
+function openBroadcast() {
+  if (!broadcastWindow || broadcastWindow.closed) {
+    broadcastWindow = window.open("broadcast.html", "broadcast");
+  }
+}
+openBroadcast();
+
+function postToBroadcast(action, time=0) {
+  if (broadcastWindow) {
+    broadcastWindow.postMessage({action: action, time: time}, "*");
+  }
+}
+
+function setTimer() {
+  const minutes = parseInt(document.getElementById("minutes").value);
+  if (!isNaN(minutes) && minutes >= 0) {
+    postToBroadcast("set", minutes*60);
+  }
+}
+
+function startTimer() {
+  postToBroadcast("start");
+}
+
+function pauseTimer() {
+  postToBroadcast("pause");
+}
+
+function resetTimer() {
+  postToBroadcast("reset");
+}
+</script>
+
+</body>
+</html>
