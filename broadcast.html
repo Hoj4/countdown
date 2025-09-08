@@ -38,21 +38,14 @@
     transition: background 0.2s;
   }
   button:hover { background: #FF1493; }
-  iframe {
-    width: 100%;
-    height: 200px;
-    border: 2px solid #FF69B4;
-    border-radius: 8px;
-    margin-top: 20px;
-  }
 </style>
 </head>
 <body>
 
 <h2>타이머 컨트롤</h2>
 
-<input type="number" id="minutes" placeholder="분" min="0">
-<input type="number" id="seconds" placeholder="초" min="0" max="59">
+<input type="number" id="minutes" placeholder="분 입력" min="0">
+<input type="number" id="seconds" placeholder="초 입력" min="0" max="59">
 <button onclick="setTimer()">설정</button>
 <br>
 <button onclick="startTimer()">Start</button>
@@ -61,21 +54,28 @@
 
 <div id="currentTime">00:00</div>
 
-<iframe id="broadcastFrame" src="broadcast.html"></iframe>
-
 <script>
+let broadcastWindow = null;
 let localTime = 0;
 let localTimerId = null;
-const broadcastFrame = document.getElementById("broadcastFrame");
+
+function openBroadcast() {
+  if (!broadcastWindow || broadcastWindow.closed) {
+    broadcastWindow = window.open("broadcast.html", "broadcast");
+  }
+}
+openBroadcast();
 
 function postToBroadcast(action, time=0) {
-  broadcastFrame.contentWindow.postMessage({action, time}, "*");
+  if (broadcastWindow) {
+    broadcastWindow.postMessage({action: action, time: time}, "*");
+  }
 }
 
 function setTimer() {
   const minutes = parseInt(document.getElementById("minutes").value) || 0;
   const seconds = parseInt(document.getElementById("seconds").value) || 0;
-  if (seconds >= 0 && seconds < 60) {
+  if (minutes >= 0 && seconds >= 0 && seconds < 60) {
     localTime = minutes * 60 + seconds;
     updateDisplay();
     postToBroadcast("set", localTime);
@@ -85,48 +85,43 @@ function setTimer() {
 }
 
 function startTimer() {
+  postToBroadcast("start");
   if (!localTimerId) {
-    const endTime = Date.now() + localTime * 1000;
     localTimerId = setInterval(() => {
-      const remaining = Math.round((endTime - Date.now()) / 1000);
-      if (remaining >= 0) {
-        localTime = remaining;
+      if (localTime > 0) {
+        localTime--;
         updateDisplay();
       } else {
         clearInterval(localTimerId);
         localTimerId = null;
-        localTime = 0;
-        updateDisplay();
       }
-    }, 250);
-    postToBroadcast("start");
+    }, 1000);
   }
 }
 
 function pauseTimer() {
+  postToBroadcast("pause");
   clearInterval(localTimerId);
   localTimerId = null;
-  postToBroadcast("pause");
 }
 
 function resetTimer() {
+  postToBroadcast("reset");
   clearInterval(localTimerId);
   localTimerId = null;
   localTime = 0;
   updateDisplay();
-  postToBroadcast("reset");
 }
 
 function updateDisplay() {
-  const minutes = Math.floor(localTime / 60);
-  const seconds = localTime % 60;
+  let minutes = Math.floor(localTime / 60);
+  let seconds = localTime % 60;
   document.getElementById("currentTime").textContent =
     String(minutes).padStart(2,'0') + ":" + String(seconds).padStart(2,'0');
 }
 
 window.addEventListener("message", (event) => {
   const data = event.data;
-  if (!data.action) return;
   if (data.action === "set") {
     localTime = data.time;
     updateDisplay();
