@@ -2,128 +2,35 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>타이머 컨트롤</title>
+<title>방송 타이머</title>
 <style>
   body {
-    font-family: 'Arial', sans-serif;
-    background: #222;
-    color: white;
-    padding: 20px;
+    background: transparent;
+    color: #FF69B4; 
+    font-size: 120px;
+    font-family: 'Arial Black', Arial, sans-serif;
     text-align: center;
+    margin-top: 20%;
+    text-shadow: 4px 4px 10px rgba(0,0,0,0.6);
   }
-  h2 { margin-bottom: 20px; }
-  #currentTime {
-    font-size: 50px;
-    margin: 20px 0;
-    color: #FF69B4;
-    text-shadow: 2px 2px 5px rgba(0,0,0,0.6);
+  #timer {
+    transition: color 0.3s;
   }
-  input {
-    font-size: 22px;
-    width: 80px;
-    padding: 10px;
-    border-radius: 8px;
-    border: none;
-    margin-right: 10px;
-  }
-  button {
-    font-size: 20px;
-    padding: 10px 20px;
-    margin: 5px;
-    border: none;
-    border-radius: 8px;
-    background: #FF69B4;
-    color: white;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  button:hover { background: #FF1493; }
 </style>
 </head>
 <body>
 
-<h2>타이머 컨트롤</h2>
-
-<input type="number" id="minutes" placeholder="분 입력" min="0">
-<input type="number" id="seconds" placeholder="초 입력" min="0" max="59">
-<button onclick="setTimer()">설정</button>
-<br>
-<button onclick="startTimer()">Start</button>
-<button onclick="pauseTimer()">Pause</button>
-<button onclick="resetTimer()">Reset</button>
-
-<div id="currentTime">00:00</div>
+<div id="timer">00:00</div>
 
 <script>
-let broadcastWindow = null;
-let localTime = 0;
-let localTimerId = null;
+let timeLeft = 0;
+let timerId = null;
 
-function openBroadcast() {
-  if (!broadcastWindow || broadcastWindow.closed) {
-    broadcastWindow = window.open("broadcast.html", "broadcast");
-  }
-}
-openBroadcast();
-
-function postToBroadcast(action, time=0) {
-  if (broadcastWindow) {
-    broadcastWindow.postMessage({action: action, time: time}, "*");
-  }
-}
-
-function setTimer() {
-  const minutes = parseInt(document.getElementById("minutes").value) || 0;
-  const seconds = parseInt(document.getElementById("seconds").value) || 0;
-  if (minutes >= 0 && seconds >= 0 && seconds < 60) {
-    localTime = minutes * 60 + seconds;
-    updateDisplay();
-    postToBroadcast("set", localTime);
-  } else {
-    alert("초는 0~59 사이로 입력해주세요.");
-  }
-}
-
-function startTimer() {
-  postToBroadcast("start");
-  if (!localTimerId) {
-    localTimerId = setInterval(() => {
-      if (localTime > 0) {
-        localTime--;
-        updateDisplay();
-      } else {
-        clearInterval(localTimerId);
-        localTimerId = null;
-      }
-    }, 1000);
-  }
-}
-
-function pauseTimer() {
-  postToBroadcast("pause");
-  clearInterval(localTimerId);
-  localTimerId = null;
-}
-
-function resetTimer() {
-  postToBroadcast("reset");
-  clearInterval(localTimerId);
-  localTimerId = null;
-  localTime = 0;
-  updateDisplay();
-}
-
-function updateDisplay() {
-  let minutes = Math.floor(localTime / 60);
-  let seconds = localTime % 60;
-  document.getElementById("currentTime").textContent =
-    String(minutes).padStart(2,'0') + ":" + String(seconds).padStart(2,'0');
-}
-
+// 웹 컨트롤에서 postMessage로 시간 받기
 window.addEventListener("message", (event) => {
   const data = event.data;
   if (data.action === "set") {
-    localTime = data.time;
+    timeLeft = data.time;
     updateDisplay();
   } else if (data.action === "start") {
     startTimer();
@@ -133,6 +40,41 @@ window.addEventListener("message", (event) => {
     resetTimer();
   }
 });
+
+function updateDisplay() {
+  let minutes = Math.floor(timeLeft / 60);
+  let seconds = timeLeft % 60;
+  document.getElementById("timer").textContent =
+    String(minutes).padStart(2,'0') + ":" + String(seconds).padStart(2,'0');
+}
+
+function startTimer() {
+  if (timerId) return;
+  timerId = setInterval(() => {
+    if (timeLeft > 0) {
+      timeLeft--;
+      updateDisplay();
+      if(timeLeft <= 10) document.getElementById("timer").style.color = "#FF4500";
+      else document.getElementById("timer").style.color = "#FF69B4";
+    } else {
+      clearInterval(timerId);
+      timerId = null;
+    }
+  }, 1000);
+}
+
+function pauseTimer() {
+  clearInterval(timerId);
+  timerId = null;
+}
+
+function resetTimer() {
+  clearInterval(timerId);
+  timerId = null;
+  timeLeft = 0;
+  updateDisplay();
+  document.getElementById("timer").style.color = "#FF69B4";
+}
 
 updateDisplay();
 </script>
